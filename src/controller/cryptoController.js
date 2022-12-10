@@ -1,34 +1,36 @@
 const axios= require('axios')
 const cryptoModel=require('../Model/cryptoModel')
 
-const getCoin = async function(req, res){
-  
-   
-    try {
-        
-        const options = {
-            method: "get",
-            url: `https://api.coincap.io/v2/assets`,
-            headers: {
-                Authorization: "Bearer c25420fe-9a2c-4f3f-935e-1316c700c4e0"
-            }
-        }
-        const result = await axios(options)
-        let { data } = result
-let getData = data.data
-getData = getData.sort((currency1, currency2) => {
-            return (currency1.changePercent24H - currency2.changePercent24Hr)
-        }).map((element) => { const { symbol, name, marketCapUsd, priceUsd } = element
-        return { symbol, name, marketCapUsd, priceUsd }
-         });
-await cryptoModel.deleteMany()
-await cryptoModel.create(getData)
-let finalData2 = await cryptoModel.find()
-return res.status(201).send({status: true, data: finalData2}) }
-catch (error) {
-       return res.status(500).send({status: false, message: error.message })
+const getcryptocurrency=async function(req,res){
+try{
+    let currency={
+        headers: {
+                Authorization: "Bearer e251a148-16a9-4178-af56-7d3839492ef2",
+              },
+        method:"get",
+        url:`https://api.coincap.io/v2/assets`
     }
+    let result=await axios(currency)
+    let data=result.data.data.sort((a, b) =>b.changePercent24Hr - a.changePercent24Hr)
+    let arr=[]
+    await cryptoModel.deleteMany({})
+    for(let i=0;i<data.length;i++){
+        let unique=await cryptoModel.find({symbol:data[i].symbol,name:data[i].name})
+        if(unique.length==0){
+            let collection={}
+            collection.symbol=data[i].symbol,
+            collection.name=data[i].name,
+            collection.marketCapUsd=data[i].marketCapUsd,
+            collection.priceUsd=data[i].priceUsd
+            arr.push(collection)
+        }
+    }
+    await cryptoModel.insertMany(arr)
+
+    return res.status(200).send({status:true,message:data})
+}catch(error){
+    return res.status(500).send({status:false,message:error.message})
+}
 }
 
-
-module.exports = {getCoin}
+module.exports={getcryptocurrency}
